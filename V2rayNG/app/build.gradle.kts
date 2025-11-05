@@ -134,6 +134,72 @@ android {
 
 }
 
+// 统一 Kotlin Toolchain 到 JDK 17
+kotlin {
+    jvmToolchain(17)
+}
+
+// 可覆盖的命令/参数（默认适配 macOS/Linux PATH）
+val adbCmd = (project.findProperty("adbCmd") as? String) ?: "adb"
+val emulatorCmd = (project.findProperty("emulatorCmd") as? String) ?: "emulator"
+val avdName = (project.findProperty("avdName") as? String) ?: "Pixel_6_API_34"
+
+// 基础 Exec 任务，避免脚本中解析输出
+tasks.register<Exec>("startEmulator") {
+    // 启动模拟器（可能阻塞；如需后台可改用 shell 包裹）
+    commandLine(emulatorCmd, "-avd", avdName, "-netdelay", "none", "-netspeed", "full", "-no-snapshot-load", "-no-boot-anim", "-no-audio", "-gpu", "auto")
+    isIgnoreExitValue = true
+}
+
+tasks.register<Exec>("adbWaitForDevice") {
+    commandLine(adbCmd, "wait-for-device")
+    isIgnoreExitValue = true
+}
+
+tasks.register<Exec>("adbEnsureBootCompleted") {
+    // 使用 shell 循环等待 sys.boot_completed=1
+    commandLine("sh", "-lc", "while [ \"\$(adb shell getprop sys.boot_completed)\" != \"1\" ]; do sleep 1; done")
+    isIgnoreExitValue = true
+}
+
+tasks.register("waitForDevice") {
+    dependsOn("startEmulator", "adbWaitForDevice", "adbEnsureBootCompleted")
+}
+
+tasks.register<Exec>("uninstallOldApkPlaystore") {
+    dependsOn("waitForDevice")
+    commandLine(adbCmd, "uninstall", "com.v2ray.ang")
+    isIgnoreExitValue = true
+}
+
+tasks.register<Exec>("uninstallOldApkFdroid") {
+    dependsOn("waitForDevice")
+    commandLine(adbCmd, "uninstall", "com.v2ray.ang.fdroid")
+    isIgnoreExitValue = true
+}
+
+// 让 install 任务在执行前依赖设备就绪与卸载旧版
+tasks.matching { it.name == "installPlaystoreDebug" }.configureEach { dependsOn("waitForDevice", "uninstallOldApkPlaystore") }
+tasks.matching { it.name == "installFdroidDebug" }.configureEach { dependsOn("waitForDevice", "uninstallOldApkFdroid") }
+
+// 组合任务：安装并跟踪 logcat（Playstore/F-Droid Debug）
+tasks.register<Exec>("installPlaystoreDebugAndLogcat") {
+    dependsOn("waitForDevice", ":app:installPlaystoreDebug")
+    // 清理日志、拉起应用并按 PID 过滤日志
+    commandLine(
+        "sh", "-lc",
+        "adb logcat -c && adb shell am start -n com.v2ray.ang/.ui.MainActivity && PID=\$(adb shell pidof com.v2ray.ang || true); if [ -z \"\$PID\" ]; then PID=\$(adb shell ps -A | awk '/com.v2ray.ang/ {print \$2; exit}'); fi; if [ -z \"\$PID\" ]; then echo 'PID not found' && exit 1; fi; adb logcat --pid \$PID -v time v2rayNG:D AndroidRuntime:E *:W"
+    )
+}
+
+tasks.register<Exec>("installFdroidDebugAndLogcat") {
+    dependsOn("waitForDevice", ":app:installFdroidDebug")
+    commandLine(
+        "sh", "-lc",
+        "adb logcat -c && adb shell am start -n com.v2ray.ang.fdroid/.ui.MainActivity && PID=\$(adb shell pidof com.v2ray.ang.fdroid || true); if [ -z \"\$PID\" ]; then PID=\$(adb shell ps -A | awk '/com.v2ray.ang.fdroid/ {print \$2; exit}'); fi; if [ -z \"\$PID\" ]; then echo 'PID not found' && exit 1; fi; adb logcat --pid \$PID -v time v2rayNG:D AndroidRuntime:E *:W"
+    )
+}
+
 dependencies {
     // Core Libraries
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar", "*.jar"))))
