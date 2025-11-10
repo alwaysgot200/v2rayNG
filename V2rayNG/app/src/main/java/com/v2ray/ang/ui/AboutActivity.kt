@@ -10,7 +10,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.tencent.mmkv.MMKV
 import com.v2ray.ang.AppConfig
-import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.databinding.ActivityAboutBinding
 import com.v2ray.ang.extension.toast
@@ -69,7 +68,7 @@ class AboutActivity : BaseActivity() {
                             .putExtra(
                                 Intent.EXTRA_STREAM,
                                 FileProvider.getUriForFile(
-                                    this, BuildConfig.APPLICATION_ID + ".cache", File(ret.second)
+                                    this, AppConfig.ANG_PACKAGE + ".cache", File(ret.second)
                                 )
                             ), getString(R.string.title_configuration_share)
                     )
@@ -124,10 +123,10 @@ class AboutActivity : BaseActivity() {
             Utils.openUri(this, AppConfig.APP_PRIVACY_POLICY)
         }
 
-        "v${BuildConfig.VERSION_NAME} (${SpeedtestManager.getLibVersion()})".also {
+        "v${Utils.getBuildConfigString("VERSION_NAME") ?: "unknown"} (${SpeedtestManager.getLibVersion()})".also {
             binding.tvVersion.text = it
         }
-        BuildConfig.APPLICATION_ID.also {
+        AppConfig.ANG_PACKAGE.also {
             binding.tvAppId.text = it
         }
     }

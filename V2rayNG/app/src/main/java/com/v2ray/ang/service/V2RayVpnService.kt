@@ -17,7 +17,6 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.LOOPBACK
-import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.NotificationManager
 import com.v2ray.ang.handler.SettingsManager
@@ -256,7 +255,7 @@ class V2RayVpnService : VpnService(), ServiceControl {
      * @param builder The VPN Builder to configure.
      */
     private fun configurePerAppProxy(builder: Builder) {
-        val selfPackageName = BuildConfig.APPLICATION_ID
+        val selfPackageName = AppConfig.ANG_PACKAGE
 
         // If per-app proxy is not enabled, disallow the VPN service's own package and return
         if (MmkvManager.decodeSettingsBool(AppConfig.PREF_PER_APP_PROXY) == false) {

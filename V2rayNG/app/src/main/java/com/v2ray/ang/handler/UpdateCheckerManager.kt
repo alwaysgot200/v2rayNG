@@ -4,12 +4,12 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import com.v2ray.ang.AppConfig
-import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.dto.CheckUpdateResult
 import com.v2ray.ang.dto.GitHubRelease
 import com.v2ray.ang.extension.concatUrl
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.JsonUtil
+import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -38,9 +38,10 @@ object UpdateCheckerManager {
             }
 
             val latestVersion = latestRelease.tagName.removePrefix("v")
-            Log.i(AppConfig.TAG, "Found new version: $latestVersion (current: ${BuildConfig.VERSION_NAME})")
+            val currentVersion = Utils.getBuildConfigString("VERSION_NAME") ?: "0.0.0"
+            Log.i(AppConfig.TAG, "Found new version: $latestVersion (current: $currentVersion)")
 
-            return@withContext if (compareVersions(latestVersion, BuildConfig.VERSION_NAME) > 0) {
+            return@withContext if (compareVersions(latestVersion, currentVersion) > 0) {
                 val downloadUrl = getDownloadUrl(latestRelease, Build.SUPPORTED_ABIS[0])
                 CheckUpdateResult(
                     hasUpdate = true,
@@ -106,7 +107,7 @@ object UpdateCheckerManager {
             (it.name.contains(abi, true))
         }
 
-        val asset = if (BuildConfig.APPLICATION_ID.contains(fDroid, ignoreCase = true)) {
+        val asset = if (AppConfig.ANG_PACKAGE.contains(fDroid, ignoreCase = true)) {
             assetsByAbi.firstOrNull { it.name.contains(fDroid) }
         } else {
             assetsByAbi.firstOrNull { !it.name.contains(fDroid) }

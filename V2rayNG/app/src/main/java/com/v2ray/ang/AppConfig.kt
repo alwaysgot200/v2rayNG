@@ -1,11 +1,13 @@
 package com.v2ray.ang
 
+import com.v2ray.ang.util.Utils
+
 
 object AppConfig {
 
     /** The application's package name. */
-    const val ANG_PACKAGE = BuildConfig.APPLICATION_ID
-    const val TAG = BuildConfig.APPLICATION_ID
+    val ANG_PACKAGE: String = Utils.getBuildConfigString("APPLICATION_ID") ?: "com.v2ray.ang"
+    val TAG: String = ANG_PACKAGE
 
     /** Directory names used in the app's file system. */
     const val DIR_ASSETS = "assets"
@@ -74,10 +76,10 @@ object AppConfig {
     /** Protocol identifiers. */
     const val PROTOCOL_FREEDOM = "freedom"
 
-    /** Broadcast actions. */
-    const val BROADCAST_ACTION_SERVICE = "$ANG_PACKAGE.action.service"
-    const val BROADCAST_ACTION_ACTIVITY = "$ANG_PACKAGE.action.activity"
-    const val BROADCAST_ACTION_WIDGET_CLICK = "$ANG_PACKAGE.action.widget.click"
+    /** Broadcast actions (depend on runtime package name). */
+    val BROADCAST_ACTION_SERVICE = "$ANG_PACKAGE.action.service"
+    val BROADCAST_ACTION_ACTIVITY = "$ANG_PACKAGE.action.activity"
+    val BROADCAST_ACTION_WIDGET_CLICK = "$ANG_PACKAGE.action.widget.click"
 
     /** Tasker extras. */
     const val TASKER_EXTRA_BUNDLE = "com.twofortyfouram.locale.intent.extra.BUNDLE"

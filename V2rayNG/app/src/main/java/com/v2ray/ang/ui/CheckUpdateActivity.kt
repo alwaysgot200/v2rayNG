@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.v2ray.ang.AppConfig
-import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.databinding.ActivityCheckUpdateBinding
 import com.v2ray.ang.dto.CheckUpdateResult
@@ -37,7 +36,7 @@ class CheckUpdateActivity : BaseActivity() {
         }
         binding.checkPreRelease.isChecked = MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
 
-        "v${BuildConfig.VERSION_NAME} (${SpeedtestManager.getLibVersion()})".also {
+        "v${Utils.getBuildConfigString("VERSION_NAME") ?: "unknown"} (${SpeedtestManager.getLibVersion()})".also {
             binding.tvVersion.text = it
         }
 

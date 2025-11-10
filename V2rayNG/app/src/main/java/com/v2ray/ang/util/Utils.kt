@@ -18,7 +18,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.LOOPBACK
-import com.v2ray.ang.BuildConfig
 import java.io.IOException
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -32,7 +31,37 @@ object Utils {
 
     private val IPV4_REGEX =
         Regex("^([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.([01]?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$")
-    private val IPV6_REGEX = Regex("^((?:[0-9A-Fa-f]{1,4}))?((?::[0-9A-Fa-f]{1,4}))*::((?:[0-9A-Fa-f]{1,4}))?((?::[0-9A-Fa-f]{1,4}))*|((?:[0-9A-Fa-f]{1,4}))((?::[0-9A-Fa-f]{1,4})){7}$")
+    // Comprehensive IPv6 regex supporting full and compressed forms (e.g., 1::, ::, a:b::c:d)
+    private val IPV6_REGEX = Regex(
+        "^(?:" +
+                "(?:[0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}" + // 1:2:3:4:5:6:7:8
+                "|(?:[0-9A-Fa-f]{1,4}:){1,7}:" +              // 1:: 1:2:3:4:5:6:7::
+                "|:(?::[0-9A-Fa-f]{1,4}){1,7}" +              // ::1 ::1:2:3:4:5:6:7
+                "|(?:[0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}" +
+                "|(?:[0-9A-Fa-f]{1,4}:){1,5}(?::[0-9A-Fa-f]{1,4}){1,2}" +
+                "|(?:[0-9A-Fa-f]{1,4}:){1,4}(?::[0-9A-Fa-f]{1,4}){1,3}" +
+                "|(?:[0-9A-Fa-f]{1,4}:){1,3}(?::[0-9A-Fa-f]{1,4}){1,4}" +
+                "|(?:[0-9A-Fa-f]{1,4}:){1,2}(?::[0-9A-Fa-f]{1,4}){1,5}" +
+                "|[0-9A-Fa-f]{1,4}:(?:(?::[0-9A-Fa-f]{1,4}){1,6})" +
+                "|::" +                                        // bare ::
+                ")$"
+    )
+
+    private fun isValidIpv4Cidr(value: String): Boolean {
+        val parts = value.split("/")
+        if (parts.size != 2) return false
+        val base = parts[0]
+        val prefix = parts[1].toIntOrNull() ?: return false
+        if (prefix !in 0..32) return false
+        // Manual octet range check to avoid regex edge cases
+        val octets = base.split('.')
+        if (octets.size != 4) return false
+        for (octet in octets) {
+            val n = octet.toIntOrNull() ?: return false
+            if (n !in 0..255) return false
+        }
+        return true
+    }
 
     /**
      * Convert string to editable for Kotlin.
@@ -163,30 +192,48 @@ object Utils {
             var addr = value.trim()
             if (addr.isEmpty()) return false
 
-            //CIDR
-            if (addr.contains("/")) {
-                val arr = addr.split("/")
-                if (arr.size == 2 && arr[1].toIntOrNull() != null && arr[1].toInt() > -1) {
-                    addr = arr[0]
+            // IPv6 address with port: [IPv6]:port -> extract inside brackets
+            if (addr.startsWith("[")) {
+                val endBracket = addr.indexOf(']')
+                if (endBracket > 0) {
+                    addr = addr.substring(1, endBracket)
                 }
+            }
+
+            // Remove port from IPv4 addresses with colon notation (e.g., 127.0.0.1:80)
+            val colonIdx = addr.indexOf(':')
+            if (colonIdx > -1 && addr.count { it == ':' } == 1 && addr.contains('.')) {
+                addr = addr.substring(0, colonIdx)
+            }
+
+            // CIDR handling: extract base IP and validate prefix range
+            if (addr.contains('/')) {
+                val arr = addr.split('/')
+                if (arr.size != 2) return false
+                val base = arr[0]
+                val prefix = arr[1].toIntOrNull() ?: return false
+                // Decide IPv4 or IPv6 prefix range based on base format
+                if (base.contains('.')) {
+                    if (prefix !in 0..32) return false
+                } else if (base.contains(':')) {
+                    if (prefix !in 0..128) return false
+                } else {
+                    return false
+                }
+                addr = base
             }
 
             // Handle IPv4-mapped IPv6 addresses
             if (addr.startsWith("::ffff:") && '.' in addr) {
-                addr = addr.drop(7)
-            } else if (addr.startsWith("[::ffff:") && '.' in addr) {
-                addr = addr.drop(8).replace("]", "")
+                addr = addr.removePrefix("::ffff:")
             }
 
-            val octets = addr.split('.')
-            if (octets.size == 4) {
-                if (octets[3].contains(":")) {
-                    addr = addr.substring(0, addr.indexOf(":"))
-                }
-                return isIpv4Address(addr)
+            // Final validation: IPv4 or IPv6 regex
+            return when {
+                addr.contains('.') -> isIpv4Address(addr)
+                addr.contains(':') -> isIpv6Address(addr)
+                else -> false
             }
-
-            return isIpv6Address(addr)
         } catch (e: Exception) {
             Log.e(AppConfig.TAG, "Failed to validate IP address", e)
             return false
@@ -235,11 +282,7 @@ object Utils {
      * @return True if the string is a valid IPv6 address, false otherwise.
      */
     private fun isIpv6Address(value: String): Boolean {
-        var addr = value
-        if (addr.startsWith("[") && addr.endsWith("]")) {
-            addr = addr.drop(1).dropLast(1)
-        }
-        return IPV6_REGEX.matches(addr)
+        return IPV6_REGEX.matches(value)
     }
 
     /**
@@ -514,18 +557,40 @@ object Utils {
     }
 
     /**
+     * Safely read BuildConfig fields via reflection to avoid hard dependency.
+     */
+    fun getBuildConfigString(field: String): String? {
+        return try {
+            val clazz = Class.forName("com.v2ray.ang.BuildConfig")
+            val fld = clazz.getDeclaredField(field)
+            fld.isAccessible = true
+            fld.get(null)?.toString()
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    /**
      * Check if the package is Xray.
      *
      * @return True if the package is Xray, false otherwise.
      */
-    fun isXray(): Boolean = BuildConfig.APPLICATION_ID.startsWith("com.v2ray.ang")
+    fun isXray(): Boolean {
+        val appId = getBuildConfigString("APPLICATION_ID") ?: ""
+        return appId.startsWith("com.v2ray.ang")
+    }
 
     /**
      * Check if it is the Google Play version.
      *
      * @return True if the package is Google Play, false otherwise.
      */
-    fun isGoogleFlavor(): Boolean = BuildConfig.FLAVOR == "playstore"
+    fun isGoogleFlavor(): Boolean {
+        val flavor = getBuildConfigString("FLAVOR")
+        if (flavor != null) return flavor == "playstore"
+        val distribution = getBuildConfigString("DISTRIBUTION")
+        return distribution?.equals("Play Store", ignoreCase = true) == true
+    }
 
     /**
      * Converts an InetAddress to its long representation
@@ -551,20 +616,20 @@ object Utils {
      */
     fun isIpInCidr(ip: String, cidr: String): Boolean {
         try {
-            if (!isIpAddress(ip)) return false
+            // Only support IPv4 CIDR here
+            if (!isIpv4Address(ip)) return false
 
-            // Parse CIDR (e.g., "192.168.1.0/24")
-            val (cidrIp, prefixLen) = cidr.split("/")
-            val prefixLength = prefixLen.toInt()
+            val parts = cidr.split("/")
+            if (parts.size != 2) return false
+            val cidrIp = parts[0]
+            val prefixLength = parts[1].toIntOrNull() ?: return false
+            if (prefixLength !in 0..32) return false
+            if (!isIpv4Address(cidrIp)) return false
 
-            // Convert IP and CIDR's IP portion to Long
             val ipLong = inetAddressToLong(InetAddress.getByName(ip))
             val cidrIpLong = inetAddressToLong(InetAddress.getByName(cidrIp))
 
-            // Calculate subnet mask (e.g., /24 → 0xFFFFFF00)
             val mask = if (prefixLength == 0) 0L else (-1L shl (32 - prefixLength))
-
-            // Check if they're in the same subnet
             return (ipLong and mask) == (cidrIpLong and mask)
         } catch (e: Exception) {
             Log.e(AppConfig.TAG, "Failed to check if IP is in CIDR", e)

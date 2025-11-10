@@ -34,6 +34,46 @@ v2rayNG 是一款面向 Android 的图形化客户端，集成了代理协议解
 
 ---
 
+## 用户使用说明
+
+面向使用者的核心说明，覆盖两种连接模式、常用设置与端口：
+
+- 连接模式：
+  - `VPN 模式`（默认）：基于系统 `VpnService` 拦截设备流量并转发到 Xray/V2Ray 核心；可按应用选择是否走代理，适用于不支持手动代理的 App。
+  - `仅本地代理`：在本机开启 `SOCKS/HTTP` 端口，需在应用/系统中手动设置代理，适用于浏览器、终端或支持代理的 App。
+
+- 快速开始：
+  - 安装并首次授权 VPN 权限（仅在 VPN 模式需要）。
+  - 导入或新增配置：支持订阅、二维码扫描、粘贴链接、手动编辑。
+  - 在首页选择要使用的配置，点击开关启动。
+  - 如选择“仅本地代理”，在目标 App 中设置代理到下述端口。
+
+- 常用设置（设置 → 连接与网络）：
+  - `连接模式`：在 VPN 与仅代理之间切换。
+  - `每应用代理/绕行`：选择走代理或绕行的应用（VPN 模式下生效）。
+  - `追加 HTTP 代理`（Android 10+）：VPN 模式下为系统网络注入 `127.0.0.1:<HTTP端口>`。
+  - `本地 DNS/FakeDNS`：在 VPN 模式下可启用本地解析（默认端口见下）。
+  - `VPN 接口地址/MTU`：用于兼容特定网络环境。
+  - `远程 DNS/VPN DNS`：自定义上游 DNS 服务器。
+  - `代理共享`：允许局域网设备连接到本机代理（安全提示见下）。
+
+- 默认端口与地址（可在设置中调整）：
+  - `SOCKS`：`127.0.0.1:10808`（`AppConfig.PORT_SOCKS`）。
+  - `HTTP`：`127.0.0.1:10809`（通常为 SOCKS 端口+1）。
+  - `本地 DNS`：`127.0.0.1:10853`。
+  - `代理共享`启用后，入站监听地址从 `127.0.0.1` 变为 `0.0.0.0`，允许同一局域网其他设备访问。
+
+- 安全提示：
+  - 启用“代理共享”前，请确认当前所连接的局域网受信任；否则存在被他人使用的风险。
+  - 二维码/订阅源来自不可信来源可能导致配置不安全或不可用。
+
+- 故障排查：
+  - 无法联网：检查是否授予 VPN 权限、所选配置是否可用、是否命中路由绕行规则。
+  - 仅代理模式无效：确认目标 App 的代理设置正确、端口未被其他应用占用、是否启用了“代理共享”。
+  - DNS 异常：调整 `远程 DNS/VPN DNS` 或关闭 `FakeDNS` 做对比测试。
+
+---
+
 ## 项目结构与功能说明
 
 仓库根目录关键子项目与用途：
@@ -43,6 +83,17 @@ v2rayNG 是一款面向 Android 的图形化客户端，集成了代理协议解
   - `app/libs/`：本地依赖目录，须放置通过 gomobile 生成的 `libv2ray.aar`（提供 `libv2ray.*` 与 `go.Seq` 绑定类）。
   - `app/build.gradle.kts`：应用的构建配置，定义 `fdroid/playstore` 两个 flavor、ABI splits、打包文件名与依赖。
   - 运行模式：`V2RayVpnService`（VPN）、`V2RayProxyOnlyService`（本地代理）。
+  - 关键模块（示例）：
+    - `service/V2RayVpnService.kt`：构建并建立 VPN TUN 接口，配置路由/DNS，按需启动 `tun2socks` 或 `hev-socks5-tunnel`。
+    - `service/V2RayProxyOnlyService.kt`：不建立 VPN，仅启动核心，暴露本地 `SOCKS/HTTP` 端口。
+    - `service/Tun2SocksService.kt`：基于 badvpn `tun2socks` 实现的 TUN→SOCKS 转发控制。
+    - `service/TProxyService.kt`：基于 `hev-socks5-tunnel` 的轻量 TUN→SOCKS 转发控制。
+    - `handler/V2RayServiceManager.kt`：统一的服务编排，按 `PREF_MODE` 选择启动 VPN 或仅代理服务。
+    - `handler/SettingsManager.kt`：读取/计算端口、DNS、接口地址、路由策略等运行时参数。
+    - `handler/V2rayConfigManager.kt`：生成/调整 Xray/V2Ray 的入站/出站与路由配置（含 DNS/Hosts 等）。
+    - `handler/MmkvManager.kt`：基于 MMKV 的设置与配置持久化。
+    - `fmt/*`：各协议链接/二维码解析与导入导出。
+    - `ui/*`：设置页、主界面、订阅与测速等。
 
 - `AndroidLibXrayLite/`：Go + gomobile 项目，生成 Android AAR（`libv2ray.aar`）。
   - 核心入口：`libv2ray_main.go`（定义 `CoreController`、`CoreCallbackHandler`、`InitCoreEnv` 等与 Xray-core 交互的逻辑）。
@@ -170,6 +221,19 @@ V2rayNG/app/build/outputs/apk/<flavor>/debug/
 - `hysteria/`（Hysteria2）：
   - 依赖：Go1.2x、gomobile（如需 AAR 绑定）。
   - 可参考仓库脚本如 `libhysteria2.sh` 进行构建，或将其作为独立组件运行。
+
+---
+
+## 汇总编译流程（总览）
+
+以下为从零到可运行 APK 的总览流程（与上文详细步骤一致）：
+
+- 准备环境：安装 `Android SDK/NDK`、`Java 17`、`Go 1.25.x`，并初始化 `gomobile`（需设置 `ANDROID_HOME/ANDROID_NDK_HOME`）。
+- 生成 AAR：在 `AndroidLibXrayLite/` 执行 `gomobile bind`，得到 `libv2ray.aar`。
+- 集成 AAR：复制到 `V2rayNG/app/libs/`，Gradle 会自动依赖引入。
+- 构建 APK：在 `V2rayNG/` 目录执行 `./gradlew :app:assembleFdroidDebug` 或 `:app:assemblePlaystoreDebug`。
+- 产物位置：`V2rayNG/app/build/outputs/apk/<flavor>/debug/`（按 ABI 输出或 `universal` 包）。
+- 可选组件：按需在根目录脚本或各子项目中编译 `tun2socks/hev/hysteria2`，并将 `.so` 放入 `app/src/main/jniLibs/<ABI>/`。
 
 ---
 

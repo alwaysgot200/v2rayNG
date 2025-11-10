@@ -3,7 +3,7 @@ package com.v2ray.ang.util
 import android.util.Log
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.AppConfig.LOOPBACK
-import com.v2ray.ang.BuildConfig
+import com.v2ray.ang.util.Utils
 import com.v2ray.ang.util.Utils.encode
 import com.v2ray.ang.util.Utils.urlDecode
 import java.io.IOException
@@ -136,7 +136,7 @@ object HttpUtil {
         while (redirects++ < maxRedirects) {
             if (currentUrl == null) continue
             val conn = createProxyConnection(currentUrl, httpPort, timeout, timeout) ?: continue
-            conn.setRequestProperty("User-agent", "v2rayNG/${BuildConfig.VERSION_NAME}")
+            conn.setRequestProperty("User-agent", "v2rayNG/${Utils.getBuildConfigString("VERSION_NAME") ?: "unknown"}")
             conn.connect()
 
             val responseCode = conn.responseCode
