@@ -8,7 +8,13 @@ set -u
 ORIGINAL_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 
-APP_ID="com.v2ray.ang.fdroid"
+PKG_BASE="${V2RAYNG_PACKAGE_BASE:-com.v2ray.ang}"
+DISTRIB="${V2RAYNG_DISTRIBUTION:-fdroid}"
+if [ "$DISTRIB" = "fdroid" ]; then
+  APP_ID="${PKG_BASE}.fdroid"
+else
+  APP_ID="${PKG_BASE}"
+fi
 APP_DIR="$SCRIPT_DIR/V2rayNG"
 
 cd "$APP_DIR" || {
@@ -47,7 +53,22 @@ ensure_gradlew() {
 
 gradle() {
   ensure_gradlew || return 1
-  ./gradlew "$@"
+  # 若用户设置了 ADB_CMD 环境变量，则透传为 Gradle 属性，以便 Kotlin DSL 解析
+  if [ -n "${ADB_CMD:-}" ]; then
+    ./gradlew -PadbCmd="${ADB_CMD}" "$@"
+  else
+    ./gradlew "$@"
+  fi
+}
+
+# 检查是否已有任何设备处于可识别状态（device/offline/unauthorized）
+adb_has_any() {
+  if ! has_cmd adb; then
+    return 1
+  fi
+  local out
+  out="$(adb devices 2>/dev/null)"
+  printf "%s\n" "$out" | grep -E '\t(device|offline|unauthorized)$' >/dev/null 2>&1
 }
 
 warn_if_missing_aar() {
@@ -177,113 +198,48 @@ do_assemble_playstore_release() {
 }
 
 do_install_fdroid_debug() {
-  if has_cmd adb; then
-    # 传入跨平台属性：macOS 优先 Genymotion；Windows/其他使用 Android Emulator
-    local useGeny="false"
-    local gmtool="/Applications/Genymotion.app/Contents/MacOS/gmtool"
-    if [ "$(uname -s)" = "Darwin" ] && [ -x "$gmtool" ]; then
-      useGeny="auto"
-    fi
-    # 自动启动模拟器并等待设备就绪后再安装（仅在设置了 GENY_DEVICE_NAME 时才传入该属性）
-    local args=(":app:startEmulator" "-PuseGenymotion=$useGeny" "-PgmtoolExe=$gmtool")
-    if [ -n "${GENY_DEVICE_NAME:-}" ]; then
-      args+=("-PgenyDeviceName=${GENY_DEVICE_NAME}")
-    fi
-    gradle "${args[@]}"
-    gradle :app:waitForDevice
-    gradle :app:installFdroidDebug
-  else
-    echo "未找到 adb，请先安装 Android Platform-Tools。"
-    return 1
-  fi
+  gradle :app:installFdroidDebug
 }
 
 do_install_playstore_debug() {
-  if has_cmd adb; then
-    local useGeny="false"
-    local gmtool="/Applications/Genymotion.app/Contents/MacOS/gmtool"
-    if [ "$(uname -s)" = "Darwin" ] && [ -x "$gmtool" ]; then
-      useGeny="auto"
-    fi
-    local args=(":app:startEmulator" "-PuseGenymotion=$useGeny" "-PgmtoolExe=$gmtool")
-    if [ -n "${GENY_DEVICE_NAME:-}" ]; then
-      args+=("-PgenyDeviceName=${GENY_DEVICE_NAME}")
-    fi
-    gradle "${args[@]}"
-    gradle :app:waitForDevice
-    gradle :app:installPlaystoreDebug
-  else
-    echo "未找到 adb，请先安装 Android Platform-Tools。"
-    return 1
-  fi
+  gradle :app:installPlaystoreDebug
 }
 
 do_stop_app() {
-  if has_cmd adb; then
-    adb shell am force-stop "$APP_ID"
-  else
-    echo "未找到 adb，请先安装 Android Platform-Tools。"
-    return 1
-  fi
+  gradle :app:stopApp
 }
 
 # 安装并跟踪日志（F-Droid/Playstore Debug）传递 Genymotion 属性
 do_install_fdroid_debug_and_logcat() {
-  if has_cmd adb; then
-    local useGeny="false"
-    local gmtool="/Applications/Genymotion.app/Contents/MacOS/gmtool"
-    if [ "$(uname -s)" = "Darwin" ] && [ -x "$gmtool" ]; then
-      useGeny="auto"
-    fi
-    local args=(":app:installFdroidDebugAndLogcat" "-PuseGenymotion=$useGeny" "-PgmtoolExe=$gmtool")
-    if [ -n "${GENY_DEVICE_NAME:-}" ]; then
-      args+=("-PgenyDeviceName=${GENY_DEVICE_NAME}")
-    fi
-    gradle "${args[@]}"
-  else
-    echo "未找到 adb，请先安装 Android Platform-Tools。"
-    return 1
-  fi
+  echo "开始执行：清理→构建 F-Droid Debug→停止旧版→卸载旧版→安装新版→后台日志写文件"
+  gradle :app:clean || true
+  gradle :app:assembleFdroidDebug || return 1
+  gradle :app:stopApp -Pdistribution=fdroid || true
+  gradle :app:uninstallFdroidDebug || true
+  gradle :app:installFdroidDebug || return 1
+  gradle :app:startLogcatFdroidToFile || true
 }
 
 do_install_playstore_debug_and_logcat() {
-  if has_cmd adb; then
-    local useGeny="false"
-    local gmtool="/Applications/Genymotion.app/Contents/MacOS/gmtool"
-    if [ "$(uname -s)" = "Darwin" ] && [ -x "$gmtool" ]; then
-      useGeny="auto"
-    fi
-    local args=(":app:installPlaystoreDebugAndLogcat" "-PuseGenymotion=$useGeny" "-PgmtoolExe=$gmtool")
-    if [ -n "${GENY_DEVICE_NAME:-}" ]; then
-      args+=("-PgenyDeviceName=${GENY_DEVICE_NAME}")
-    fi
-    gradle "${args[@]}"
+  echo "开始执行：清理→构建 Playstore Debug→停止旧版→卸载旧版→安装新版→后台日志写文件"
+  gradle :app:clean || true
+  gradle :app:assemblePlaystoreDebug || return 1
+  gradle :app:stopApp -Pdistribution=playstore || true
+  gradle :app:uninstallPlaystoreDebug || true
+  gradle :app:installPlaystoreDebug || return 1
+  gradle :app:startLogcatPlaystoreToFile || true
+}
+
+do_install_debug_and_logcat() {
+  if [ "$DISTRIB" = "fdroid" ]; then
+    do_install_fdroid_debug_and_logcat
   else
-    echo "未找到 adb，请先安装 Android Platform-Tools。"
-    return 1
+    do_install_playstore_debug_and_logcat
   fi
 }
 
 do_kill_emulator() {
-  # macOS 上优先关闭 Genymotion；否则使用 Android Emulator 的 emu kill
-  if [ "$(uname -s)" = "Darwin" ]; then
-    local gmtool="/Applications/Genymotion.app/Contents/MacOS/gmtool"
-    if [ -x "$gmtool" ]; then
-      if [ -n "${GENY_DEVICE_NAME:-}" ]; then
-        "$gmtool" admin stop "${GENY_DEVICE_NAME}" || true
-      fi
-      # 退出 Genymotion 应用（兜底）
-      osascript -e 'tell application "Genymotion" to quit' || true
-      return 0
-    fi
-  fi
-
-  if has_cmd adb; then
-    adb -e emu kill || true
-  else
-    echo "未找到 adb，请先安装 Android Platform-Tools。"
-    return 1
-  fi
+  gradle :app:killEmulator
 }
 
 while true; do
@@ -295,13 +251,14 @@ while true; do
   echo " 4) 构建 F-Droid Debug（clean + assemble）"
   echo " 5) 构建 F-Droid Release（clean + assemble + 验签）"
   echo " 6) 安装 F-Droid Debug（需 adb）"
-  echo " 7) 跟踪日志（F-Droid Debug）"
+  echo " 7) 安装及跟踪日志（F-Droid Debug）"
   echo " 8) 停止应用（${APP_ID}）"
   echo " 9) 关闭模拟器"
   echo "10) 构建 Play Store Debug（clean + assemble）"
   echo "11) 构建 Play Store Release（clean + assemble + 验签）"
   echo "12) 安装 Play Store Debug（需 adb）"
-  echo "13) 跟踪日志（Play Store Debug）"
+  echo "13) 安装及跟踪日志（Play Store Debug）"
+  echo "14) 安装并跟踪日志（按 distribution 自动选择）"
   echo " 0) 退出"
   echo "==================================="
   printf "输入数字并回车（0 退出）： "
@@ -320,6 +277,7 @@ while true; do
     11) do_assemble_playstore_release ;;
     12) do_install_playstore_debug ;;
     13) do_install_playstore_debug_and_logcat ;;
+    14) do_install_debug_and_logcat ;;
     0) break ;;
     *) echo "无效选择：$choice" ;;
   esac
