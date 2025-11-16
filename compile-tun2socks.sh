@@ -8,7 +8,7 @@
 #
 # 使用前置条件：
 # - 设置环境变量 NDK_HOME 指向 Android NDK 根目录；仓库包含 badvpn/、libancillary/、hev-socks5-tunnel/ 源码。
-# - 若要让 APK 自动打包这些本地库，请将 libs/ 放到 V2rayNG/app/ 或调整 app 的 jniLibs.srcDirs 指向仓库根 libs/。
+# - 若要让 APK 自动打包这些本地库，请将 libs/ 放到 v2plus/app/ 或调整 app 的 jniLibs.srcDirs 指向仓库根 libs/。
 
 # 开启严格模式：
 # - errexit：任何命令失败立即退出；
@@ -115,5 +115,5 @@ popd
 # - 产物：仓库根 libs/<abi>/ 下会产生：
 #   * libtun2socks.so（badvpn）—— 供 Tun2SocksService 通过 ProcessBuilder 以子进程运行
 #   * libhev-socks5-tunnel.so（hev）—— 供 TProxyService 通过 System.loadLibrary("hev-socks5-tunnel") 加载
-# - APK 打包：确保 app 的 Gradle jniLibs.srcDirs 指向包含这些 .so 的目录（默认 V2rayNG/app/libs）。
+# - APK 打包：确保 app 的 Gradle jniLibs.srcDirs 指向包含这些 .so 的目录（默认 v2plus/app/libs）。
 rm -rf "$HEVTUN_TMP"

@@ -1,0 +1,15 @@
+{
+  "cmake.configureOnOpen": false,
+  "cmake.ctest.enabled": false,
+  "cmake.sourceDirectory": "${workspaceFolder}/v2plus",
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "logViewer.watch": [
+    {
+      "title": "logcat-result",
+      "pattern": "${workspaceFolder}/v2plus/logs/*.log"
+    }
+  ],
+  "logViewer.logLevel": "trace",
+  "logViewer.showStatusBarItemOnChange": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}

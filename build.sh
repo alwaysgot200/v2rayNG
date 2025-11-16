@@ -8,13 +8,6 @@ set -u
 ORIGINAL_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 
-PKG_BASE="${V2PLUS_PACKAGE_BASE:-com.v2ray.ang}"
-DISTRIB="${V2PLUS_DISTRIBUTION:-fdroid}"
-if [ "$DISTRIB" = "fdroid" ]; then
-  APP_ID="${PKG_BASE}.fdroid"
-else
-  APP_ID="${PKG_BASE}"
-fi
 APP_DIR="$SCRIPT_DIR/v2plus"
 
 cd "$APP_DIR" || {
@@ -206,7 +199,11 @@ do_install_playstore_debug() {
 }
 
 do_stop_app() {
-  gradle :app:stopApp
+  gradle :app:stopApp -Pdistribution=fdroid
+}
+
+do_stop_app_playstore() {
+  gradle :app:stopApp -Pdistribution=playstore
 }
 
 # 安装并跟踪日志（F-Droid/Playstore Debug）传递 Genymotion 属性
@@ -230,13 +227,6 @@ do_install_playstore_debug_and_logcat() {
   gradle :app:startLogcatPlaystoreToFile || true
 }
 
-do_install_debug_and_logcat() {
-  if [ "$DISTRIB" = "fdroid" ]; then
-    do_install_fdroid_debug_and_logcat
-  else
-    do_install_playstore_debug_and_logcat
-  fi
-}
 
 do_kill_emulator() {
   gradle :app:killEmulator
@@ -252,13 +242,13 @@ while true; do
   echo " 5) 构建 F-Droid Release（clean + assemble + 验签）"
   echo " 6) 安装 F-Droid Debug（需 adb）"
   echo " 7) 安装及跟踪日志（F-Droid Debug）"
-  echo " 8) 停止应用（${APP_ID}）"
+  echo " 8) 停止应用（fdroid）"
   echo " 9) 关闭模拟器"
   echo "10) 构建 Play Store Debug（clean + assemble）"
   echo "11) 构建 Play Store Release（clean + assemble + 验签）"
   echo "12) 安装 Play Store Debug（需 adb）"
   echo "13) 安装及跟踪日志（Play Store Debug）"
-  echo "14) 安装并跟踪日志（按 distribution 自动选择）"
+  echo "14) 停止应用（com.v2ray.ang）"
   echo " 0) 退出"
   echo "==================================="
   printf "输入数字并回车（0 退出）： "
@@ -277,7 +267,7 @@ while true; do
     11) do_assemble_playstore_release ;;
     12) do_install_playstore_debug ;;
     13) do_install_playstore_debug_and_logcat ;;
-    14) do_install_debug_and_logcat ;;
+    14) do_stop_app_playstore ;;
     0) break ;;
     *) echo "无效选择：$choice" ;;
   esac

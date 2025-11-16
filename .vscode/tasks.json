@@ -1,0 +1,120 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "android:prepare-jdwp-fdroid",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-lc",
+        "cd ./v2plus && ./gradlew :app:setupJdwpForwardFdroid -PskipEmulatorStart=true -PjdwpPort=${V2PLUS_JDWP_PORT:-8701}"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:fdroid-clean",
+      "type": "shell",
+      "command": "sh",
+      "args": ["-lc", "cd ./v2plus && ./gradlew :app:clean --no-daemon"],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:fdroid-uninstall",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-lc",
+        "cd ./v2plus && ./gradlew :app:uninstallFdroidDebug || true"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:fdroid-install",
+      "type": "shell",
+      "command": "sh",
+      "args": ["-lc", "cd ./v2plus && ./gradlew :app:installFdroidDebug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:start-logcat-fdroid",
+      "type": "shell",
+      "command": "sh",
+      "args": ["-lc", "cd ./v2plus && ./gradlew :app:startLogcatFdroidToFile"],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:fdroid-oneclick-debug",
+      "type": "shell",
+      "command": "echo",
+      "args": ["fdroid oneclick debug"],
+      "problemMatcher": [],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "android:fdroid-clean",
+        "android:fdroid-uninstall",
+        "android:fdroid-install",
+        "android:prepare-jdwp-fdroid",
+        "android:start-logcat-fdroid"
+      ]
+    },
+    {
+      "label": "android:prepare-jdwp-playstore",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-lc",
+        "cd ./v2plus && ./gradlew :app:setupJdwpForwardPlaystore -PskipEmulatorStart=true -PjdwpPort=${V2PLUS_JDWP_PORT:-8701}"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:playstore-clean",
+      "type": "shell",
+      "command": "sh",
+      "args": ["-lc", "cd ./v2plus && ./gradlew :app:clean --no-daemon"],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:playstore-uninstall",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-lc",
+        "cd ./v2plus && ./gradlew :app:uninstallPlaystoreDebug || true"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:playstore-install",
+      "type": "shell",
+      "command": "sh",
+      "args": ["-lc", "cd ./v2plus && ./gradlew :app:installPlaystoreDebug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:start-logcat-playstore",
+      "type": "shell",
+      "command": "sh",
+      "args": [
+        "-lc",
+        "cd ./v2plus && ./gradlew :app:startLogcatPlaystoreToFile"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "android:playstore-oneclick-debug",
+      "type": "shell",
+      "command": "echo",
+      "args": ["playstore oneclick debug"],
+      "problemMatcher": [],
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "android:playstore-clean",
+        "android:playstore-uninstall",
+        "android:playstore-install",
+        "android:prepare-jdwp-playstore",
+        "android:start-logcat-playstore"
+      ]
+    }
+  ]
+}

@@ -726,9 +726,9 @@ tasks.register("installPlaystoreDebugAndLogcat") {
             pid = waitForPid("com.v2ray.ang")
         }
         if (pid.isBlank()) throw GradleException("PID not found for com.v2ray.ang")
-        // 映射 JDWP 到本机端口（默认 5005，可由 -PjdwpPort 或环境变量 V2RAYNG_JDWP_PORT 覆盖）
+        // 映射 JDWP 到本机端口（默认 5005，可由 -PjdwpPort 或环境变量 V2PLUS_JDWP_PORT 覆盖）
         val jdwpPort = ((project.findProperty("jdwpPort") as? String)?.toIntOrNull()
-            ?: System.getenv("V2RAYNG_JDWP_PORT")?.toIntOrNull()
+            ?: System.getenv("V2PLUS_JDWP_PORT")?.toIntOrNull()
             ?: 5005)
         // 清理可能存在的旧映射（忽略失败）
         runAdb("forward", "--remove", "tcp:${jdwpPort}")
@@ -749,7 +749,7 @@ tasks.register("installPlaystoreDebugAndLogcat") {
         }
         println("[JDWP] 已就绪：localhost:${jdwpPort} -> PID ${pid} (com.v2ray.ang)")
         println("[JDWP] VS Code 附加：host=localhost, port=${jdwpPort}")
-        val pbArgs = if (deviceSerial.isNotBlank()) arrayOf(adbCmd, "-s", deviceSerial, "logcat", "--pid", pid, "-v", "time", "v2rayNG:D", "AndroidRuntime:E", "*:W") else arrayOf(adbCmd, "logcat", "--pid", pid, "-v", "time", "v2rayNG:D", "AndroidRuntime:E", "*:W")
+        val pbArgs = if (deviceSerial.isNotBlank()) arrayOf(adbCmd, "-s", deviceSerial, "logcat", "--pid", pid, "-v", "time", "v2plus:D", "AndroidRuntime:E", "*:W") else arrayOf(adbCmd, "logcat", "--pid", pid, "-v", "time", "v2plus:D", "AndroidRuntime:E", "*:W")
         val pb = ProcessBuilder(*pbArgs)
         pb.redirectErrorStream(true)
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
@@ -867,9 +867,9 @@ tasks.register("installFdroidDebugAndLogcat") {
             pid = waitForPidFd("com.v2ray.ang.fdroid")
         }
         if (pid.isBlank()) throw GradleException("PID not found for com.v2ray.ang.fdroid")
-        // 映射 JDWP 到本机端口（默认 5005，可由 -PjdwpPort 或环境变量 V2RAYNG_JDWP_PORT 覆盖）
+        // 映射 JDWP 到本机端口（默认 5005，可由 -PjdwpPort 或环境变量 V2PLUS_JDWP_PORT 覆盖）
         val jdwpPortFd = ((project.findProperty("jdwpPort") as? String)?.toIntOrNull()
-            ?: System.getenv("V2RAYNG_JDWP_PORT")?.toIntOrNull()
+            ?: System.getenv("V2PLUS_JDWP_PORT")?.toIntOrNull()
             ?: 5005)
         // 清理可能存在的旧映射（忽略失败）
         runAdb("forward", "--remove", "tcp:${jdwpPortFd}")
@@ -890,7 +890,7 @@ tasks.register("installFdroidDebugAndLogcat") {
         }
         println("[JDWP] 已就绪：localhost:${jdwpPortFd} -> PID ${pid} (com.v2ray.ang.fdroid)")
         println("[JDWP] VS Code 附加：host=localhost, port=${jdwpPortFd}")
-        val pbArgs = if (deviceSerial.isNotBlank()) arrayOf(adbCmd, "-s", deviceSerial, "logcat", "--pid", pid, "-v", "time", "v2rayNG:D", "AndroidRuntime:E", "*:W") else arrayOf(adbCmd, "logcat", "--pid", pid, "-v", "time", "v2rayNG:D", "AndroidRuntime:E", "*:W")
+        val pbArgs = if (deviceSerial.isNotBlank()) arrayOf(adbCmd, "-s", deviceSerial, "logcat", "--pid", pid, "-v", "time", "v2plus:D", "AndroidRuntime:E", "*:W") else arrayOf(adbCmd, "logcat", "--pid", pid, "-v", "time", "v2plus:D", "AndroidRuntime:E", "*:W")
         val pb = ProcessBuilder(*pbArgs)
         pb.redirectErrorStream(true)
         pb.redirectOutput(ProcessBuilder.Redirect.INHERIT)
@@ -981,7 +981,7 @@ tasks.register("startLogcatFdroidToFile") {
 
         val args = mutableListOf(adbCmd)
         if (deviceSerial.isNotBlank()) { args.add("-s"); args.add(deviceSerial) }
-        args.addAll(listOf("logcat", "--pid", pid, "-v", "time", "v2rayNG:D", "AndroidRuntime:E", "*:W"))
+        args.addAll(listOf("logcat", "--pid", pid, "-v", "time", "v2plus:D", "AndroidRuntime:E", "*:W"))
         val pb = ProcessBuilder(*args.toTypedArray())
         pb.redirectErrorStream(true)
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logfile))
@@ -1072,7 +1072,7 @@ tasks.register("startLogcatPlaystoreToFile") {
 
         val args = mutableListOf(adbCmd)
         if (deviceSerial.isNotBlank()) { args.add("-s"); args.add(deviceSerial) }
-        args.addAll(listOf("logcat", "--pid", pid, "-v", "time", "v2rayNG:D", "AndroidRuntime:E", "*:W"))
+        args.addAll(listOf("logcat", "--pid", pid, "-v", "time", "v2plus:D", "AndroidRuntime:E", "*:W"))
         val pb = ProcessBuilder(*args.toTypedArray())
         pb.redirectErrorStream(true)
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logfile))
@@ -1100,7 +1100,7 @@ tasks.register("stopApp") {
             return code to out
         }
         val distro = ((project.findProperty("distribution") as? String)
-            ?: System.getenv("V2RAYNG_DISTRIBUTION")
+            ?: System.getenv("V2PLUS_DISTRIBUTION")
             ?: "playstore").lowercase()
         val appId = if (distro == "fdroid") "com.v2ray.ang.fdroid" else "com.v2ray.ang"
         fun resolveDeviceSerial(): String {
@@ -1261,7 +1261,7 @@ tasks.register("setupJdwpForwardFdroid") {
         if (pid.isBlank()) throw GradleException("PID not found for com.v2ray.ang.fdroid")
 
         val jdwpPortFd = ((project.findProperty("jdwpPort") as? String)?.toIntOrNull()
-            ?: System.getenv("V2RAYNG_JDWP_PORT")?.toIntOrNull()
+            ?: System.getenv("V2PLUS_JDWP_PORT")?.toIntOrNull()
             ?: 5005)
         println("[setupJdwpForwardFdroid] jdwpPort=${jdwpPortFd}")
 
@@ -1387,7 +1387,7 @@ tasks.register("setupJdwpForwardPlaystore") {
         if (pid.isBlank()) throw GradleException("PID not found for com.v2ray.ang")
 
         val jdwpPort = ((project.findProperty("jdwpPort") as? String)?.toIntOrNull()
-            ?: System.getenv("V2RAYNG_JDWP_PORT")?.toIntOrNull()
+            ?: System.getenv("V2PLUS_JDWP_PORT")?.toIntOrNull()
             ?: 5005)
         println("[setupJdwpForwardPlaystore] jdwpPort=${jdwpPort}")
 
@@ -1420,7 +1420,7 @@ tasks.register("setupJdwpForwardPlaystore") {
 
 tasks.register("setupJdwpForward") {
     val distro = ((project.findProperty("distribution") as? String)
-        ?: System.getenv("V2RAYNG_DISTRIBUTION")
+        ?: System.getenv("V2PLUS_DISTRIBUTION")
         ?: "playstore").lowercase()
     if (distro == "fdroid") {
         dependsOn("setupJdwpForwardFdroid")
@@ -1432,7 +1432,7 @@ tasks.register("setupJdwpForward") {
 // 通用安装并跟踪日志任务：通过 -Pdistribution 或环境变量选择 playstore/fdroid（默认 playstore）
 tasks.register("installDebugAndLogcat") {
     val distro = ((project.findProperty("distribution") as? String)
-        ?: System.getenv("V2RAYNG_DISTRIBUTION")
+        ?: System.getenv("V2PLUS_DISTRIBUTION")
         ?: "playstore").lowercase()
     if (distro == "fdroid") {
         dependsOn("installFdroidDebugAndLogcat")

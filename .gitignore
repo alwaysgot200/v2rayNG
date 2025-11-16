@@ -3,12 +3,14 @@
 *.jks
 
 # Ignore output JSON file
-V2rayNG/app/release/output.json
+v2plus/app/release/output.json
 
 # Ignore IDE and build system directories
 .idea/
 .gradle/
 *.iml
+.emulator_logs/
+logs/
 
 # Ignore local properties and DS_Store files
 /local.properties
@@ -19,9 +21,9 @@ V2rayNG/app/release/output.json
 build/
 output/
 /captures
-V2rayNG/app/build
-V2rayNG/build
-V2rayNG/local.properties
+v2plus/app/build
+v2plus/build
+v2plus/local.properties
 
 # Ignore APK and AAR files
 *.apk
@@ -32,9 +34,10 @@ signing.properties
 
 # Ignore shared object files
 *.so
+libs/
 
 # Ignore Google services JSON
-V2rayNG/app/google-services.json
+v2plus/app/google-services.json
 
 # Additional common Android/Java ignores
 *.log
@@ -56,7 +59,7 @@ V2rayNG/app/google-services.json
 *.pyo
 
 # Ignore files from other IDEs
-.vscode/
+#.vscode/
 .classpath
 .project
 .settings/

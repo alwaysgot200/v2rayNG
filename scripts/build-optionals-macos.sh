@@ -20,7 +20,7 @@ set -euo pipefail
 # - 在 VSCode 终端执行（bash）
 
 ROOT_DIR="$(cd "$(dirname "$0")"/.. && pwd)"
-APP_JNILIBS_DIR="$ROOT_DIR/V2rayNG/app/src/main/jniLibs"
+APP_JNILIBS_DIR="$ROOT_DIR/v2plus/app/src/main/jniLibs"
 ROOT_LIBS_DIR="$ROOT_DIR/libs"
 HY2_DIR="$ROOT_DIR/hysteria"
 
