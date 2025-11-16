@@ -13,9 +13,11 @@ V2rayNG/app/release/output.json
 # Ignore local properties and DS_Store files
 /local.properties
 .DS_Store
+._*
 
 # Ignore build directories and captures
-/build
+build/
+output/
 /captures
 V2rayNG/app/build
 V2rayNG/build

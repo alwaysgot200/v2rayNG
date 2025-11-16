@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-# v2rayNG Build Tool (macOS zsh & Linux bash compatible)
+# v2plus Build Tool (macOS zsh & Linux bash compatible)
 # 交互式构建脚本，适配仓库结构与任务名称
 
 set -u
@@ -8,25 +8,25 @@ set -u
 ORIGINAL_DIR="$(pwd)"
 SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1 && pwd)"
 
-PKG_BASE="${V2RAYNG_PACKAGE_BASE:-com.v2ray.ang}"
-DISTRIB="${V2RAYNG_DISTRIBUTION:-fdroid}"
+PKG_BASE="${V2PLUS_PACKAGE_BASE:-com.v2ray.ang}"
+DISTRIB="${V2PLUS_DISTRIBUTION:-fdroid}"
 if [ "$DISTRIB" = "fdroid" ]; then
   APP_ID="${PKG_BASE}.fdroid"
 else
   APP_ID="${PKG_BASE}"
 fi
-APP_DIR="$SCRIPT_DIR/V2rayNG"
+APP_DIR="$SCRIPT_DIR/v2plus"
 
 cd "$APP_DIR" || {
   echo "无法进入应用目录：$APP_DIR"
-  echo "请确认脚本位于仓库根目录，并存在 V2rayNG/ 子目录。"
+  echo "请确认脚本位于仓库根目录，并存在 v2plus子目录。"
   exit 1
 }
 
 print_header() {
   clear 2>/dev/null || printf "\033c"
   echo "==================================="
-  echo "       v2rayNG Build Tool (Unix)"
+  echo "       v2plus Build Tool (Unix)"
   echo "==================================="
   echo "工作目录：$APP_DIR"
 }
@@ -44,7 +44,7 @@ ensure_gradlew() {
     if [ -f "./gradlew" ]; then
       chmod +x ./gradlew 2>/dev/null || true
     else
-      echo "未找到 ./gradlew，请确认在 V2rayNG/ 目录执行。"
+      echo "未找到 ./gradlew，请确认在 v2plus/ 目录执行。"
       return 1
     fi
   fi
