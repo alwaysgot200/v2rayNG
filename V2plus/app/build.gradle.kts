@@ -95,7 +95,7 @@ android {
                 .map { it as com.android.build.gradle.internal.api.ApkVariantOutputImpl }
                 .forEach { output ->
                     val abi = output.getFilter("ABI") ?: "universal"
-                    output.outputFileName = "v2rayNG_${variant.versionName}-fdroid_${abi}.apk"
+                    output.outputFileName = "v2plus_${variant.versionName}-fdroid_${abi}.apk"
                     if (versionCodes.containsKey(abi)) {
                         output.versionCodeOverride =
                             (100 * variant.versionCode + versionCodes[abi]!!).plus(5000000)
@@ -115,7 +115,7 @@ android {
                     else
                         "universal"
 
-                    output.outputFileName = "v2rayNG_${variant.versionName}_${abi}.apk"
+                    output.outputFileName = "v2plus_${variant.versionName}_${abi}.apk"
                     if (versionCodes.containsKey(abi)) {
                         output.versionCodeOverride =
                             (1000000 * versionCodes[abi]!!).plus(variant.versionCode)
@@ -977,7 +977,7 @@ tasks.register("startLogcatFdroidToFile") {
         val logsDir = File(project.rootProject.projectDir, "logs")
         if (!logsDir.exists()) logsDir.mkdirs()
         val ts = SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())
-        val logfile = File(logsDir, "v2rayng-fdroid-${ts}.log")
+        val logfile = File(logsDir, "v2plus-fdroid-${ts}.log")
 
         val args = mutableListOf(adbCmd)
         if (deviceSerial.isNotBlank()) { args.add("-s"); args.add(deviceSerial) }
@@ -1068,7 +1068,7 @@ tasks.register("startLogcatPlaystoreToFile") {
         val logsDir = File(project.rootProject.projectDir, "logs")
         if (!logsDir.exists()) logsDir.mkdirs()
         val ts = SimpleDateFormat("yyyyMMdd-HHmmss").format(Date())
-        val logfile = File(logsDir, "v2rayng-playstore-${ts}.log")
+        val logfile = File(logsDir, "v2plus-playstore-${ts}.log")
 
         val args = mutableListOf(adbCmd)
         if (deviceSerial.isNotBlank()) { args.add("-s"); args.add(deviceSerial) }
