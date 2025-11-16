@@ -1,0 +1,71 @@
+# Ignore data and key store files
+*.dat
+*.jks
+
+# Ignore output JSON file
+v2plus/app/release/output.json
+
+# Ignore IDE and build system directories
+.idea/
+.gradle/
+*.iml
+.emulator_logs/
+logs/
+
+# Ignore local properties and DS_Store files
+/local.properties
+.DS_Store
+._*
+
+# Ignore build directories and captures
+build/
+output/
+/captures
+v2plus/app/build
+v2plus/build
+v2plus/local.properties
+
+# Ignore APK and AAR files
+*.apk
+*.aar
+*.salive
+# Ignore signing properties
+signing.properties
+
+# Ignore shared object files
+*.so
+libs/
+
+# Ignore Google services JSON
+v2plus/app/google-services.json
+
+# Additional common Android/Java ignores
+*.log
+*.tmp
+*.bak
+*.swp
+*.orig
+*.class
+*.jar
+*.war
+*.ear
+
+# Ignore executable files
+*.exe
+*.dll
+*.obj
+*.o
+*.pyc
+*.pyo
+
+# Ignore files from other IDEs
+#.vscode/
+.classpath
+.project
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Ignore OS-specific files
+Thumbs.db
+.DS_Store

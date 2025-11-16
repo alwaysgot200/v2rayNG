@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Attach v2plus (F-Droid)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 8701,
+      "preLaunchTask": "android:fdroid-oneclick-debug"
+    },
+    {
+      "type": "java",
+      "name": "Attach v2plus (Playstore)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 8701,
+      "preLaunchTask": "android:playstore-oneclick-debug"
+    }
+  ]
+}
