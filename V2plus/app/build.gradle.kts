@@ -19,7 +19,8 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 677
-        versionName = "1.10.26"
+        versionName = (project.findProperty("versionName") as? String)
+            ?: (System.getenv("V2PLUS_VERSION_NAME") ?: "1.10.26")
         multiDexEnabled = true
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
